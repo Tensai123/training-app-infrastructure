@@ -77,6 +77,11 @@ resource "aws_ecs_task_definition" "api" {
       }
     }
   ])
+
+  depends_on = [
+    aws_iam_role_policy_attachment.ecs_execution,
+    aws_cloudwatch_log_group.api
+  ]
 }
 
 # 4. Task Definition: Background Worker
@@ -116,6 +121,11 @@ resource "aws_ecs_task_definition" "worker" {
       }
     }
   ])
+
+  depends_on = [
+    aws_iam_role_policy_attachment.ecs_execution,
+    aws_cloudwatch_log_group.worker
+  ]
 }
 
 # 5. Task Definition: Frontend
@@ -152,6 +162,11 @@ resource "aws_ecs_task_definition" "frontend" {
       }
     }
   ])
+
+  depends_on = [
+    aws_iam_role_policy_attachment.ecs_execution,
+    aws_cloudwatch_log_group.frontend
+  ]
 }
 
 locals {
@@ -179,7 +194,14 @@ resource "aws_ecs_service" "api" {
     container_port   = 8000
   }
 
-  depends_on = [aws_lb_listener_rule.api_routing, aws_db_instance.postgres, aws_elasticache_cluster.redis]
+  depends_on = [
+    aws_lb_listener.http,
+    aws_lb_listener_rule.api_routing,
+    aws_db_instance.postgres,
+    aws_elasticache_cluster.redis,
+    aws_iam_role_policy_attachment.ecs_execution,
+    aws_cloudwatch_log_group.api
+  ]
 }
 
 # 7. Serwis ECS: Frontend
@@ -202,7 +224,11 @@ resource "aws_ecs_service" "frontend" {
     container_port   = 80
   }
 
-  depends_on = [aws_lb_listener.http]
+  depends_on = [
+    aws_lb_listener.http,
+    aws_iam_role_policy_attachment.ecs_execution,
+    aws_cloudwatch_log_group.frontend
+  ]
 }
 
 # 8. Serwis ECS: Background Worker
@@ -219,5 +245,10 @@ resource "aws_ecs_service" "worker" {
     assign_public_ip = local.assign_public_ip
   }
 
-  depends_on = [aws_db_instance.postgres, aws_elasticache_cluster.redis]
+  depends_on = [
+    aws_db_instance.postgres,
+    aws_elasticache_cluster.redis,
+    aws_iam_role_policy_attachment.ecs_execution,
+    aws_cloudwatch_log_group.worker
+  ]
 }
