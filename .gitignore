@@ -27,3 +27,15 @@ pr-description.md
 .vscode/
 *.swp
 *.swo
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+*.tfvars
+!*.tfvars.example
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
