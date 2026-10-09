@@ -4,6 +4,12 @@ variable "aws_region" {
   default     = "eu-central-1"
 }
 
+variable "aws_profile" {
+  type        = string
+  description = "Nazwa profilu AWS CLI (z ~/.aws/credentials), np. default"
+  default     = null
+}
+
 variable "environment" {
   type        = string
   description = "Środowisko wdrożenia (np. dev, staging, prod)"
@@ -38,6 +44,12 @@ variable "frontend_image_tag" {
   type        = string
   description = "Tag obrazu dla serwisu Frontendu"
   default     = "latest"
+}
+
+variable "enable_nat_gateway" {
+  type        = bool
+  description = "Czy tworzyć NAT Gateway. Domyślnie false (oszczędza ~$32/msc w dev - zadania Fargate pobierają obrazy bezpośrednio przez Internet Gateway)"
+  default     = false
 }
 
 variable "vpc_cidr" {

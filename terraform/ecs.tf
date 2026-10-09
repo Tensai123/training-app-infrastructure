@@ -154,6 +154,11 @@ resource "aws_ecs_task_definition" "frontend" {
   ])
 }
 
+locals {
+  ecs_subnets      = var.enable_nat_gateway ? aws_subnet.private[*].id : aws_subnet.public[*].id
+  assign_public_ip = var.enable_nat_gateway ? false : true
+}
+
 # 6. Serwis ECS: Backend API
 resource "aws_ecs_service" "api" {
   name            = "${var.project_name}-${var.environment}-api"
@@ -163,9 +168,9 @@ resource "aws_ecs_service" "api" {
   launch_type     = "FARGATE"
 
   network_configuration {
-    subnets          = aws_subnet.private[*].id
+    subnets          = local.ecs_subnets
     security_groups  = [aws_security_group.api.id]
-    assign_public_ip = false
+    assign_public_ip = local.assign_public_ip
   }
 
   load_balancer {
@@ -186,9 +191,9 @@ resource "aws_ecs_service" "frontend" {
   launch_type     = "FARGATE"
 
   network_configuration {
-    subnets          = aws_subnet.private[*].id
+    subnets          = local.ecs_subnets
     security_groups  = [aws_security_group.frontend.id]
-    assign_public_ip = false
+    assign_public_ip = local.assign_public_ip
   }
 
   load_balancer {
@@ -209,9 +214,9 @@ resource "aws_ecs_service" "worker" {
   launch_type     = "FARGATE"
 
   network_configuration {
-    subnets          = aws_subnet.private[*].id
+    subnets          = local.ecs_subnets
     security_groups  = [aws_security_group.worker.id]
-    assign_public_ip = false
+    assign_public_ip = local.assign_public_ip
   }
 
   depends_on = [aws_db_instance.postgres, aws_elasticache_cluster.redis]

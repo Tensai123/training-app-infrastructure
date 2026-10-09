@@ -2,8 +2,14 @@ aws_region         = "eu-central-1"
 environment        = "dev"
 project_name       = "training-app"
 
+# Profil z ~/.aws/credentials (opcjonalnie, domyślnie default)
+# aws_profile     = "default"
+
 # Twój login na Docker Hub, z którego ECS Fargate pobierze publiczne obrazy
 dockerhub_username = "tensai123"
+
+# Wylaczenie NAT Gateway pozwala zaoszczedzic ~$32/msc w dev (obrazy pobierane przez Internet Gateway)
+enable_nat_gateway = false
 
 api_image_tag      = "latest"
 worker_image_tag   = "latest"
