@@ -1,0 +1,53 @@
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: training-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+  api:
+    image: training-api
+    build:
+      context: ./apps/api
+    container_name: training-api
+    restart: unless-stopped
+    ports:
+      - "8001:8000"
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=sqlite:////tmp/tasks.db
+      - API_PORT=8000
+    volumes:
+      - shared-data:/tmp
+    depends_on:
+      - redis
+
+  worker:
+    image: training-worker
+    build:
+      context: ./apps/worker
+    container_name: training-worker
+    restart: unless-stopped
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=sqlite:////tmp/tasks.db
+    volumes:
+      - shared-data:/tmp
+    depends_on:
+      - redis
+      - api
+
+  frontend:
+    image: training-frontend
+    build:
+      context: ./apps/frontend
+    container_name: training-frontend
+    restart: unless-stopped
+    ports:
+      - "3001:80"
+    depends_on:
+      - api
+
+volumes:
+  shared-data:
