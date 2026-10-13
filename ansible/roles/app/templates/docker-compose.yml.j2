@@ -1,0 +1,42 @@
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: training-redis
+    restart: always
+
+  api:
+    image: "{{ dockerhub_username }}/training-api:{{ api_image_tag }}"
+    container_name: training-api
+    restart: always
+    ports:
+      - "{{ api_port }}:8000"
+    env_file:
+      - .env
+    volumes:
+      - shared-data:/tmp
+    depends_on:
+      - redis
+
+  worker:
+    image: "{{ dockerhub_username }}/training-worker:{{ worker_image_tag }}"
+    container_name: training-worker
+    restart: always
+    env_file:
+      - .env
+    volumes:
+      - shared-data:/tmp
+    depends_on:
+      - redis
+      - api
+
+  frontend:
+    image: "{{ dockerhub_username }}/training-frontend:{{ frontend_image_tag }}"
+    container_name: training-frontend
+    restart: always
+    ports:
+      - "{{ frontend_port }}:80"
+    depends_on:
+      - api
+
+volumes:
+  shared-data:

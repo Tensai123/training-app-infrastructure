@@ -1,0 +1,52 @@
+name: Deploy Application with Ansible (Self-Hosted Runner)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'ansible/**'
+      - '.github/workflows/ansible-deploy.yml'
+
+jobs:
+  deploy:
+    name: Run Ansible Playbook
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify or install prerequisites (sshpass & ansible)
+        run: |
+          echo "Weryfikacja pakietu sshpass..."
+          if ! command -v sshpass &> /dev/null; then
+            echo "Instalacja sshpass..."
+            sudo apt-get update && sudo apt-get install -y sshpass
+          fi
+
+          echo "Weryfikacja pakietu ansible-playbook..."
+          if ! command -v ansible-playbook &> /dev/null; then
+            echo "Instalacja ansible..."
+            sudo apt-get update && sudo apt-get install -y ansible
+          fi
+
+      - name: Run Ansible Playbook on Target Server
+        env:
+          APP_HOST: ${{ vars.APP_HOST }}
+          ANSIBLE_USER: ${{ secrets.ANSIBLE_USER }}
+          ANSIBLE_PASS: ${{ secrets.ANSIBLE_PASS }}
+        run: |
+          if [ -z "$APP_HOST" ]; then
+            echo "BŁĄD: Zmienna repozytorium APP_HOST nie jest ustawiona!"
+            exit 1
+          fi
+
+          echo "Rozpoczynam wdrożenie na serwer: $APP_HOST"
+          cd ansible
+          ansible-playbook -i "${APP_HOST}," deploy.yml \
+            -e "ansible_user=${ANSIBLE_USER}" \
+            -e "ansible_password=${ANSIBLE_PASS}" \
+            -e "ansible_become_password=${ANSIBLE_PASS}" \
+            -e "ansible_ssh_common_args='-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'"
