@@ -1,18 +1,25 @@
 name: Deploy Application with Ansible (Self-Hosted Runner)
 
 on:
-  workflow_dispatch:
+  workflow_run:
+    workflows: ["Build and Push Docker Images to Docker Hub"]
+    branches:
+      - main
+    types:
+      - completed
   push:
     branches:
       - main
     paths:
       - 'ansible/**'
       - '.github/workflows/ansible-deploy.yml'
+  workflow_dispatch:
 
 jobs:
   deploy:
     name: Run Ansible Playbook
     runs-on: self-hosted
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
 
     steps:
       - name: Checkout repository
