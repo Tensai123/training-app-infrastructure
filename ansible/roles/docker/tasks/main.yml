@@ -1,0 +1,56 @@
+---
+- name: Zainstaluj pakiety wymagane przez repozytorium Dockera
+  ansible.builtin.apt:
+    name:
+      - ca-certificates
+      - curl
+      - gnupg
+    state: present
+    update_cache: true
+
+- name: Upewnij się, że katalog /etc/apt/keyrings istnieje
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: "0755"
+
+- name: Pobierz oficjalny klucz GPG Dockera
+  ansible.builtin.get_url:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    dest: /etc/apt/keyrings/docker.asc
+    mode: "0644"
+    force: false
+
+- name: Dodaj oficjalne repozytorium Docker APT (deb822)
+  ansible.builtin.deb822_repository:
+    name: docker
+    types: [deb]
+    uris: https://download.docker.com/linux/ubuntu
+    suites: ["{{ ansible_distribution_release }}"]
+    components: [stable]
+    signed_by: /etc/apt/keyrings/docker.asc
+    state: present
+
+- name: Zainstaluj Docker CE oraz Docker Compose Plugin
+  ansible.builtin.apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
+    state: present
+    update_cache: true
+
+- name: Upewnij się, że usługa Docker jest uruchomiona i włączona przy starcie systemu
+  ansible.builtin.systemd:
+    name: docker
+    state: started
+    enabled: true
+
+- name: Dodaj użytkownika do grupy docker
+  ansible.builtin.user:
+    name: "{{ ansible_user }}"
+    groups: docker
+    append: true
+  when: ansible_user != 'root'

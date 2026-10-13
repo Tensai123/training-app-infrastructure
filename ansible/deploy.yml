@@ -1,0 +1,9 @@
+---
+- name: Wdrożenie stosu mikrousług Training App na serwerze Ubuntu 24.04
+  hosts: app_servers
+  become: true
+  gather_facts: true
+
+  roles:
+    - role: docker
+    - role: app

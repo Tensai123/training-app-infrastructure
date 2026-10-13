@@ -1,0 +1,50 @@
+---
+- name: Upewnij się, że katalog aplikacji istnieje
+  ansible.builtin.file:
+    path: "{{ app_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Wygeneruj plik .env z szablonu
+  ansible.builtin.template:
+    src: .env.j2
+    dest: "{{ app_dir }}/.env"
+    mode: "0600"
+
+- name: Wygeneruj plik docker-compose.yml z szablonu
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ app_dir }}/docker-compose.yml"
+    mode: "0644"
+
+- name: Pobierz najnowsze obrazy kontenerów z Docker Hub
+  ansible.builtin.command:
+    cmd: docker compose pull
+    chdir: "{{ app_dir }}"
+  register: compose_pull
+  changed_when: "'Downloaded' in compose_pull.stdout or 'Pulling' in compose_pull.stdout"
+
+- name: Uruchom stos mikrousług przez Docker Compose
+  ansible.builtin.command:
+    cmd: docker compose up -d --remove-orphans
+    chdir: "{{ app_dir }}"
+  register: compose_up
+  changed_when: "'Started' in compose_up.stdout or 'Recreated' in compose_up.stdout"
+
+- name: Odczekaj na gotowość API i sprawdź endpoint /health
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ api_port }}/health"
+    method: GET
+    status_code: 200
+  register: health_check
+  until: health_check.status == 200
+  retries: 15
+  delay: 2
+
+- name: Wyświetl status wdrożenia
+  ansible.builtin.debug:
+    msg:
+      - "Wdrożenie zakończone sukcesem!"
+      - "Frontend: http://{{ ansible_host }}:{{ frontend_port }}"
+      - "API: http://{{ ansible_host }}:{{ api_port }}"
+      - "API Docs: http://{{ ansible_host }}:{{ api_port }}/docs"
